@@ -1,47 +1,38 @@
 use std::{env, fs};
 
 
+fn find_file(path: String, file: String) -> bool {
 
-fn find_file(path: String, file: String) {
-    let mut queue = Vec::new();
+    let paths = fs::read_dir(path).expect("Error");
+    for path in paths {
 
-    queue.push(path.clone());
-
-
-    while !queue.is_empty() {
-
-        let path = queue.remove(0);
-
-        let paths =  fs::read_dir(path).expect("Error");
-
-        for p in paths {
-            let p_unwrapped = p.unwrap();
-            if p_unwrapped.path().is_file() && p_unwrapped.file_name().to_str().expect("") == file {
-                println!("Found full path: {:?}", p_unwrapped.path().to_str());
-                return;
-            }
-            else if !p_unwrapped.path().is_file() {
-                queue.push(p_unwrapped.path().display().to_string());
+        let path_unwrapped = path.unwrap();
+        if path_unwrapped.path().is_file() && path_unwrapped.file_name().to_str().expect("") == file {
+            println!("Found full path: {}", path_unwrapped.path().display().to_string());
+            return true;
+        }
+        else if !path_unwrapped.path().is_file() {
+            if find_file(path_unwrapped.path().display().to_string(), file.clone()) {
+                return true;
             }
         }
-    }
+    };
+    return false;
 
-
-    println!("File not found");
 
 }
 
 
-fn recursive_output(p: &str) {
+fn recursive_output(p: String) {
     let paths = fs::read_dir(p).expect("Error");
     for path in paths {
 
         let path_unwrapped = path.unwrap();
         if path_unwrapped.path().is_file() {
-            println!("{:?}", path_unwrapped.path().to_str());
+            println!("{}", path_unwrapped.path().display().to_string());
         }
         else {
-            recursive_output(path_unwrapped.path().to_str().expect("Error"));
+            recursive_output(path_unwrapped.path().display().to_string());
         }
     };
 }
@@ -51,10 +42,12 @@ fn main() {
     // println!("{}", args[1]);
 
     if args.len() == 4 && args[2] == "--find" {
-        find_file(args[1].clone(), args[3].clone());
+        if !find_file(args[1].clone(), args[3].clone()) {
+            println!("File not found");
+        }
     }
 
     else {
-        recursive_output(args[1].as_str());
+        recursive_output(args[1].clone());
     }
 }
